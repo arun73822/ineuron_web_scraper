@@ -1,4 +1,6 @@
 # Import All Required Packages
+from html.parser import HTMLParser
+from unittest import result
 from flask import Flask,render_template,request
 from flask_cors import cross_origin,CORS
 from urllib.request import urlopen as uReq
@@ -11,55 +13,54 @@ logging.basicConfig(filename='ineuron.log',level=logging.DEBUG,format='%(asctime
 
 app=Flask(__name__)  # Creates the object
 
-@app.route('/',methods=['POST'])
+@app.route('/',methods=['POST',"GET"])
 @cross_origin()
 def homepage():
     return render_template('index.html')
 
-@app.route('/ineuron_scraping',methods=['POST'])
+@app.route('/ineuron_scraping',methods=['POST','GET'])
 @cross_origin()
 def course_content():
     "This function gives the courses are available in form of list"
     if request.method=='POST':
         try:
-            search_string=request.form('content').replace(" ","-").title()
+            search_string=request.form['content'].replace(" ","-").title()
             ineuron_url='https://courses.ineuron.ai/category/' + search_string
             logging.info('The search url is {}'.format(ineuron_url))
             urlclient=uReq(ineuron_url)
             ineuron_page=urlclient.read()
             urlclient.close()
             logging.info('Successfully reads the page')
-            ineuron_html=bs(ineuron_page,'html_parser')
-            data=bs(str(ineuron_html.findAll('script',{'type':'application/json'}))).script.text
-            json_file=json.loads(data)
-            global course_list
-            course_list=list(json_file['props']['pageProps']['initialState']['init']['courses'])
-            print(course_list)
+            ineuron_html=bs(ineuron_page,'html.parser')
+            json_file=bs(str(ineuron_html.findAll('script',{'type':'application/json'}))).script.text
+            data3=json.loads(json_file)
+            course1_list=list(data3['props']['pageProps']['initialState']['init']['courses'])
+            #print(course1_list)
+            #logging.info(course1_list)
         except Exception as e:
             print("Something wrong please check {}".format(e))
             logging.info("Something wrong please check {}".format(e))
+        try:
 
-def create_url():
-    " This function gives the url for each course"
-    url="https://courses.ineuron.ai/"
-    global courses_url_list
-    course_url_list=[]
-    for data in course_list:
-        data.replace(" ","-")
-        total_url=url + data
-        courses_url_list.append(total_url)
-    return course_url_list
+            courses_url_list=[]
+            for data2 in course1_list:
+                data4=data2.replace(" ","-")
+                total_url= "https://courses.ineuron.ai/" + data4
+                courses_url_list.append(total_url)
+                #print(courses_url_list)
+                #logging.info(courses_url_list)
+        except Exception as e:
+            print(e)
 
-def results():
-    " This function gives the all courses details"
-    courses_list=[]
-    for data in courses_url_list:
-        uclient=uReq(data)
-        ineuron_page=uclient.read()
-        uclient.close()
-        ineuron_html=bs(ineuron_page,'html.parser')
-        jsonfile=bs(str(ineuron_html.findAll("script",{"type":"application/json"}))).script.text
-        data1=json.loads(jsonfile)
+        courses_list=[]
+        for data in courses_url_list:
+            uclient_1=uReq(data)
+            ineuron_page_1=uclient_1.read()
+            uclient_1.close()
+            logging.info('Successfully reads the all pages')
+            ineuron_html_1=bs(ineuron_page_1,'html.parser')
+            jsonfile_1=bs(str(ineuron_html_1.findAll("script",{"type":"application/json"}))).script.text
+            data1=json.loads(jsonfile_1)
         try:
             course_name=data1['props']['pageProps']['data']['title']
         except:
@@ -105,12 +106,13 @@ def results():
         except:
             features= "Features are not available"
 
-        mydict={'coursename':course_name,'JobGuaranteeProgram':JobGuaranteeProgram,'ongoing':on_going,
-                'description':description,'video_url':video_url,'mode':mode,'price':price,
-                'duration':duration,'learn':learn,'requirements':requirements,'features':features
-        }
-        courses_list.append(mydict)
-    return render_template('results.html', result=courses_list[0:(len(courses_list)-1)])
-        
+            mydict={'coursename':course_name,'JobGuaranteeProgram':JobGuaranteeProgram,'ongoing':on_going,
+                    'description':description,'video_url':video_url,'mode':mode,'price':price,
+                    'duration':duration,'learn':learn,'requirements':requirements,'features':features
+            }
+            courses_list.append(mydict)
+        return render_template('results.html', courses_list=courses_list[0:(len(courses_list)-1)])
+    else:
+        return render_template('index.html')   
 if __name__=='__main__':
     app.run(debug=True)
