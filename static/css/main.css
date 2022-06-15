@@ -14,11 +14,11 @@ table, td, th {
 
 table {
     border-collapse: collapse;
-    width: 100%;
+    width: 1000%;
 }
 
 th {
-    height: 30px;
+    height: 300px;
 }
 
 td {
@@ -31,5 +31,5 @@ td {
 }
 
 #content {
-    width: 70%;
+    width: 100%;
 }
